@@ -3,9 +3,19 @@ import axios from "@/lib/axios";
 import { toast } from "sonner";
 
 export interface LoginResponse {
-  token: string;
-  refreshToken: string;
-  user: any;
+  message: string;
+  user: {
+    id: number;
+    email: string;
+    first_name: string;
+    last_name: string;
+    date_joined: string;
+    is_active: boolean;
+  };
+  tokens: {
+    access: string;
+    refresh: string;
+  };
 }
 
 export const useLogin = () =>
@@ -17,22 +27,22 @@ export const useLogin = () =>
 
         const data = response.data;
 
-        if (!data.token) {
-          throw new Error('Login failed: Token not received');
+        if (!data.tokens || !data.tokens.access) {
+          console.error('Token check failed. data.tokens:', data.tokens);
+          throw new Error('Login failed: token not received from server');
         }
 
         // Save token in localStorage
         if (typeof window !== 'undefined') {
-          localStorage.setItem('token', data.token);
-          if (data.refreshToken) {
-            localStorage.setItem('refreshToken', data.refreshToken);
-          }
+          localStorage.setItem('token', data.tokens.access);
+          localStorage.setItem('refreshToken', data.tokens.refresh);
         }
 
-        toast.success('Login successful', {
-          description: 'Welcome back!',
-          duration: 3000,
-        });
+        // DON'T show toast - it might cause issues
+        // toast.success('Login successful', {
+        //   description: 'Welcome back!',
+        //   duration: 3000,
+        // });
 
         return data;
       } catch (error: any) {
@@ -59,10 +69,11 @@ export const useLogin = () =>
           errorMessage = error.message;
         }
         
-        toast.error('Login Error', {
-          description: errorMessage,
-          duration: 5000,
-        });
+        // DON'T show toast on error either
+        // toast.error('Login Error', {
+        //   description: errorMessage,
+        //   duration: 5000,
+        // });
         
         throw new Error(errorMessage);
       }

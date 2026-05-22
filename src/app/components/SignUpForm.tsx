@@ -5,11 +5,16 @@ import InputField from "./InputField";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import { motion } from "framer-motion";
 import { validateSignUp } from "@/utils/validateSignUp";
-import { AUTH_PATH } from "@/routes/path";
+import { AUTH_PATH, DASHBOARD_PATH } from "@/routes/path";
 import axios from "@/lib/axios";
+import { parseAuthResponse } from "@/lib/auth-session";
+import { setAuth } from "@/store/slices/auth-slice";
+import { useDispatch } from "react-redux";
 import { AxiosError, isAxiosError } from "axios";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface SignUpData {
   email: string;
@@ -24,6 +29,8 @@ interface ApiError {
 }
 
 export default function SignUpForm() {
+  const router = useRouter();
+  const dispatch = useDispatch();
   const isDark = useSelector((state: RootState) => state.theme.isDark);
   const [formData, setFormData] = useState<SignUpData>({
     email: "",
@@ -45,8 +52,12 @@ export default function SignUpForm() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     setError("");
 
     const validationError = validateSignUp(formData);
@@ -58,8 +69,15 @@ export default function SignUpForm() {
     setIsLoading(true);
 
     try {
-      const { data } = await axios.post( AUTH_PATH.LOGIN, formData);
-      window.location.href = AUTH_PATH.LOGIN + "?signup=success";
+      const response = await axios.post("/auth/register/", formData);
+      const { token, refreshToken, user } = parseAuthResponse(response.data);
+
+      if (token) {
+        dispatch(setAuth({ token, user, refreshToken }));
+        router.replace(DASHBOARD_PATH.ROOT);
+      } else {
+        router.push(`${AUTH_PATH.LOGIN}?signup=success`);
+      }
     } catch (err) {
       let errorMessage = "Sign up failed";
 
@@ -94,13 +112,13 @@ export default function SignUpForm() {
   };
 
   return (
-    <motion.form 
-      onSubmit={handleSubmit} 
-      className="space-y-4 w-full"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
+    <div className="space-y-4 w-full">
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="space-y-4"
+      >
       {error && (
         <motion.div
           className={`text-sm p-3 rounded-md border ${
@@ -186,7 +204,8 @@ export default function SignUpForm() {
       </motion.div>
 
       <motion.button
-        type="submit"
+        type="button"
+        onClick={() => handleSubmit()}
         className={`w-full font-bold py-2 px-4 rounded-lg transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 ${
           isDark
             ? "bg-gradient-to-r from-[#7dd3fc] to-[#06b6d4] text-[#0f1419] hover:shadow-lg hover:shadow-cyan-500/50"
@@ -207,15 +226,16 @@ export default function SignUpForm() {
         variants={itemVariants}
       >
         Already have an account?{" "}
-        <a
+        <Link
           href={AUTH_PATH.LOGIN}
           className={`font-medium hover:underline transition-colors ${
             isDark ? "text-[#7dd3fc] hover:text-white" : "text-[#5A7863] hover:text-[#2d3e2d]"
           }`}
         >
           sign in
-        </a>
+        </Link>
       </motion.div>
-    </motion.form>
+      </motion.div>
+    </div>
   );
 }

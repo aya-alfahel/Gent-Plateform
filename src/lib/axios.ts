@@ -2,32 +2,26 @@ import ax from "axios";
 import { toast } from "sonner";
 import API_ROUTES from "../constant/api-routes";
 import { AUTH_PATH } from "../routes/path";
+import { clearAuthStorage, getStoredRefreshToken, getStoredToken } from "./auth-session";
 
 // Base API URL
 export const API_BASE_URL = "https://gent-api.onrender.com/api";
 const FULL_API_URL = `${API_BASE_URL}`;
 
-// Helper: get token safely
-const getToken = (): string | null => {
-  if (typeof window === "undefined") return null;
-  try {
-    return localStorage.getItem("token");
-  } catch (error) {
-    console.error("Error accessing localStorage:", error);
-    return null;
-  }
-};
+const getToken = getStoredToken;
 
-// Helper: logout user
-const handleLogout = () => {
-  if (typeof window !== "undefined") {
-    try {
-      localStorage.clear();
-      window.location.href = AUTH_PATH.LOGIN;
-    } catch (error) {
-      console.error("Error during logout:", error);
-      window.location.href = AUTH_PATH.LOGIN;
+let isRedirectingToLogin = false;
+
+const handleSessionExpired = () => {
+  if (typeof window === "undefined" || isRedirectingToLogin) return;
+  isRedirectingToLogin = true;
+  try {
+    clearAuthStorage();
+    if (!window.location.pathname.startsWith(AUTH_PATH.LOGIN)) {
+      window.location.replace(AUTH_PATH.LOGIN);
     }
+  } catch (error) {
+    console.error("Error during session expiry redirect:", error);
   }
 };
 
@@ -39,7 +33,7 @@ const axios = ax.create({
     "Content-Type": "application/json",
   },
   withCredentials: false,
-  timeout: 10000, // 10s
+  timeout: 30000, // 30s - Render free tier can be slow on cold start
   maxRedirects: 0, // Prevent redirects that might change POST to GET
 });
 
@@ -47,9 +41,17 @@ const axios = ax.create({
 axios.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
-      const token = getToken();
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      // Only add token for non-auth endpoints
+      const isAuthEndpoint = 
+        config.url?.includes('/auth/login') ||
+        config.url?.includes('/auth/register') ||
+        config.url?.includes('/auth/signup');
+
+      if (!isAuthEndpoint) {
+        const token = getToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
       }
 
       const language = localStorage.getItem("i18nextLng") || "en";
@@ -89,26 +91,48 @@ axios.interceptors.response.use(
 
     // Handle 401 (Unauthorized) and try refresh token
     if (error?.response?.status === 401 && !originalRequest._retry) {
+      const requestUrl = String(originalRequest?.url ?? "");
+      const isAuthEndpoint =
+        requestUrl.includes("auth/login") ||
+        requestUrl.includes("auth/register") ||
+        requestUrl.includes("auth/logout");
+
+      if (isAuthEndpoint) {
+        return Promise.reject(error);
+      }
+
       originalRequest._retry = true;
-      const refreshToken = localStorage.getItem("refreshToken");
+      const refreshToken = getStoredRefreshToken();
 
       if (!refreshToken) {
-        handleLogout();
+        handleSessionExpired();
         return Promise.reject(error);
       }
 
       try {
-        const { data } = await axios.post(API_ROUTES.AUTH.REFRESH_TOKEN, { refreshToken });
-        if (data.token && data.refreshToken) {
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("refreshToken", data.refreshToken);
-          if (data.permissions) localStorage.setItem("permissions", JSON.stringify(data.permissions));
+        const { data } = await axios.post(API_ROUTES.AUTH.REFRESH_TOKEN, {
+          refresh: refreshToken,
+          refreshToken,
+        });
 
-          originalRequest.headers.Authorization = `Bearer ${data.token}`;
+        const newToken =
+          data?.token ?? data?.access ?? data?.access_token ?? null;
+        const newRefresh =
+          data?.refreshToken ?? data?.refresh ?? data?.refresh_token ?? refreshToken;
+
+        if (newToken) {
+          localStorage.setItem("token", String(newToken));
+          localStorage.setItem("refreshToken", String(newRefresh));
+          if (data.permissions) {
+            localStorage.setItem("permissions", JSON.stringify(data.permissions));
+          }
+
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return axios(originalRequest);
-        } else throw new Error("Invalid refresh token response");
+        }
+        throw new Error("Invalid refresh token response");
       } catch (refreshError) {
-        handleLogout();
+        handleSessionExpired();
         return Promise.reject(refreshError);
       }
     }

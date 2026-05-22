@@ -7,6 +7,7 @@ import AuthSteps from "@/app/components/AuthSteps";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import SharedNavigation from "@/app/components/SharedNavigation";
+import Link from "next/link";
 
 export default function SignUpPage() {
   const isDark = useSelector((state: RootState) => state.theme.isDark);
@@ -68,7 +69,7 @@ export default function SignUpPage() {
           : "border-[#5A7863]/20 bg-white/50"
       }`}>
         <div className="flex flex-wrap justify-center gap-6 text-xs sm:text-sm">
-          <a
+          <Link
             href="/privacy"
             className={`transition-colors ${
               isDark
@@ -77,8 +78,8 @@ export default function SignUpPage() {
             }`}
           >
             Privacy Policy
-          </a>
-          <a
+          </Link>
+          <Link
             href="/terms"
             className={`transition-colors ${
               isDark
@@ -87,7 +88,7 @@ export default function SignUpPage() {
             }`}
           >
             Terms of Service
-          </a>
+          </Link>
           <span className={isDark ? "text-white/30" : "text-[#2d3e2d]/30"}>•</span>
           <span className={`text-xs ${isDark ? "text-white/50" : "text-[#2d3e2d]/50"}`}>
             © 2026 Gent. All rights reserved.

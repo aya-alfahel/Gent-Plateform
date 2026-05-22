@@ -71,18 +71,19 @@ export default function SharedNavigation() {
           >
             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </motion.button>
-          <motion.a
-            href={AUTH_PATH.LOGIN}
-            className={`px-6 py-2 rounded-lg transition-all font-medium ${
-              isDark
-                ? "bg-gradient-to-r from-[#7dd3fc] to-[#06b6d4] text-[#0f1419] hover:shadow-lg hover:shadow-cyan-500/50"
-                : "bg-gradient-to-r from-[#5A7863] to-[#4a6853] text-white hover:shadow-lg"
-            }`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Sign In
-          </motion.a>
+          <Link href={AUTH_PATH.LOGIN}>
+            <motion.div
+              className={`px-6 py-2 rounded-lg transition-all font-medium cursor-pointer ${
+                isDark
+                  ? "bg-gradient-to-r from-[#7dd3fc] to-[#06b6d4] text-[#0f1419] hover:shadow-lg hover:shadow-cyan-500/50"
+                  : "bg-gradient-to-r from-[#5A7863] to-[#4a6853] text-white hover:shadow-lg"
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Sign In
+            </motion.div>
+          </Link>
         </div>
 
         {/* Mobile Menu Button */}
@@ -140,17 +141,18 @@ export default function SharedNavigation() {
               {link.label}
             </Link>
           ))}
-          <motion.a
-            href={AUTH_PATH.LOGIN}
-            className={`block px-4 py-2 rounded-lg transition-all font-medium text-center ${
-              isDark
-                ? "bg-gradient-to-r from-[#7dd3fc] to-[#06b6d4] text-[#0f1419]"
-                : "bg-gradient-to-r from-[#5A7863] to-[#4a6853] text-white"
-            }`}
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Sign In
-          </motion.a>
+          <Link href={AUTH_PATH.LOGIN}>
+            <motion.div
+              className={`block px-4 py-2 rounded-lg transition-all font-medium text-center cursor-pointer ${
+                isDark
+                  ? "bg-gradient-to-r from-[#7dd3fc] to-[#06b6d4] text-[#0f1419]"
+                  : "bg-gradient-to-r from-[#5A7863] to-[#4a6853] text-white"
+              }`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Sign In
+            </motion.div>
+          </Link>
         </div>
       </motion.div>
     </motion.nav>

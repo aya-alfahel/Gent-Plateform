@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 
 interface LoginButtonProps {
-  onClick: () => void;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export default function LoginButton({ onClick }: LoginButtonProps) {
@@ -11,6 +11,7 @@ export default function LoginButton({ onClick }: LoginButtonProps) {
 
   return (
     <Button
+      type="submit"
       onClick={onClick}
       className={`w-full cursor-pointer mt-4 font-bold transition-all duration-300 ${
         isDark
