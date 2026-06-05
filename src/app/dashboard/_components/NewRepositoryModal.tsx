@@ -13,17 +13,20 @@ interface NewRepositoryModalProps {
     name: string;
     description: string;
     isPrivate: boolean;
-  }) => void;
+  }) => Promise<void>;
 }
 
 export default function NewRepositoryModal({
   isOpen,
   onClose,
   isDark,
+  onCreate,
 }: NewRepositoryModalProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const t = getDashboardTheme(isDark);
   useEffect(() => {
     if (!isOpen) return;
@@ -35,6 +38,33 @@ export default function NewRepositoryModal({
       document.body.style.overflow = "";
     };
   }, [isOpen, onClose]);
+
+  const handleCreate = async () => {
+    setErrorMessage("");
+    if (!name.trim()) {
+      setErrorMessage("Repository name is required.");
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      await onCreate({
+        name: name.trim(),
+        description: description.trim(),
+        isPrivate,
+      });
+      setName("");
+      setDescription("");
+      setIsPrivate(false);
+      onClose();
+    } catch (error: any) {
+      setErrorMessage(
+        error?.response?.data?.detail || error?.message || "Failed to create repository."
+      );
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -115,6 +145,12 @@ export default function NewRepositoryModal({
                     }}
                   />
                 </div>
+
+                {errorMessage ? (
+                  <div className="rounded-md border px-3 py-2 text-sm text-red-500" style={{ borderColor: "#fca5a5", backgroundColor: "#fee2e2" }}>
+                    {errorMessage}
+                  </div>
+                ) : null}
 
                 <div>
                   <label
@@ -241,16 +277,17 @@ export default function NewRepositoryModal({
                 >
                   Cancel
                 </button>
-                <button
-                  // onClick={handleCreate}
+                    <button
                   type="button"
-                  className="px-4 py-2 text-sm font-semibold rounded-lg transition-all hover:shadow-lg"
+                  onClick={handleCreate}
+                  disabled={isCreating}
+                  className="px-4 py-2 text-sm font-semibold rounded-lg transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
                   style={{
                     background: t.accentGradient,
                     color: t.successText,
                   }}
                 >
-                  Create repository
+                  {isCreating ? "Creating…" : "Create repository"}
                 </button>
               </div>
             </motion.div>

@@ -41,11 +41,13 @@ const axios = ax.create({
 axios.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
-      // Only add token for non-auth endpoints
-      const isAuthEndpoint = 
-        config.url?.includes('/auth/login') ||
-        config.url?.includes('/auth/register') ||
-        config.url?.includes('/auth/signup');
+      config.headers = config.headers || {};
+      const requestUrl = String(config.url ?? "").toLowerCase();
+      const isAuthEndpoint =
+        requestUrl.includes("/auth/login") ||
+        requestUrl.includes("/auth/register") ||
+        requestUrl.includes("/auth/signup") ||
+        requestUrl.includes("/auth/token/refresh");
 
       if (!isAuthEndpoint) {
         const token = getToken();

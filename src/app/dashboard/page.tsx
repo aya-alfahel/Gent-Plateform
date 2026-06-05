@@ -5,12 +5,11 @@ import { Filter, SortAsc, FolderGit2 } from "lucide-react";
 import { useDashboard } from "./_components/DashboardContext";
 import RepositoryCard from "./_components/RepositoryCard";
 import { getDashboardTheme } from "./_components/dashboard-theme";
-import { MOCK_REPOSITORIES } from "./_data/mock-repos";
 
 type SortKey = "updated" | "name" | "stars";
 
 export default function DashboardPage() {
-  const { isDark, searchQuery, selectedRepoId, openNewRepoModal } =
+  const { isDark, searchQuery, selectedRepoId, openNewRepoModal, repositories, reposLoading } =
     useDashboard();
   const [sortBy, setSortBy] = useState<SortKey>("updated");
   const [filterType, setFilterType] = useState<"all" | "public" | "private">(
@@ -19,8 +18,8 @@ export default function DashboardPage() {
 
   const t = getDashboardTheme(isDark);
 
-  const repositories = useMemo(() => {
-    let list = [...MOCK_REPOSITORIES];
+  const filteredRepositories = useMemo(() => {
+    let list = [...repositories];
     const q = searchQuery.trim().toLowerCase();
 
     if (q) {
@@ -54,7 +53,7 @@ export default function DashboardPage() {
     }
 
     return list;
-  }, [searchQuery, filterType, sortBy, selectedRepoId]);
+  }, [repositories, searchQuery, filterType, sortBy, selectedRepoId]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -88,18 +87,18 @@ export default function DashboardPage() {
       {/* Stats strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
-          { label: "Total", value: MOCK_REPOSITORIES.length },
+          { label: "Total", value: repositories.length },
           {
             label: "Public",
-            value: MOCK_REPOSITORIES.filter((r) => !r.isPrivate).length,
+            value: repositories.filter((r) => !r.isPrivate).length,
           },
           {
             label: "Private",
-            value: MOCK_REPOSITORIES.filter((r) => r.isPrivate).length,
+            value: repositories.filter((r) => r.isPrivate).length,
           },
           {
             label: "Languages",
-            value: new Set(MOCK_REPOSITORIES.map((r) => r.language)).size,
+            value: new Set(repositories.map((r) => r.language)).size,
           },
         ].map((stat) => (
           <div
@@ -162,9 +161,21 @@ export default function DashboardPage() {
       </div>
 
       {/* Repository list */}
-      {repositories.length > 0 ? (
+      {reposLoading ? (
+        <div
+          className="flex items-center justify-center py-16 px-6 rounded-xl border text-center"
+          style={{
+            backgroundColor: t.elevated,
+            borderColor: t.border,
+          }}
+        >
+          <p className="text-sm" style={{ color: t.textMuted }}>
+            Loading repositories…
+          </p>
+        </div>
+      ) : filteredRepositories.length > 0 ? (
         <div className="space-y-3">
-          {repositories.map((repo, index) => (
+          {filteredRepositories.map((repo, index) => (
             <RepositoryCard
               key={repo.id}
               repo={repo}

@@ -17,7 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { getDashboardTheme } from "./dashboard-theme";
-import { MOCK_REPOSITORIES } from "../_data/mock-repos";
+import type { MockRepository } from "../_data/mock-repos";
 import ProfileDropdown from "./ProfileDropdown";
 import { DASHBOARD_PATH } from "@/routes/path";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,7 @@ interface DashboardSidebarProps {
   onNewRepo: () => void;
   selectedRepoId: string | null;
   onSelectRepo: (id: string) => void;
+  repositories: MockRepository[];
   mobileOpen?: boolean;
   onMobileClose?: () => void;
 }
@@ -39,6 +40,7 @@ export default function DashboardSidebar({
   onNewRepo,
   selectedRepoId,
   onSelectRepo,
+  repositories,
   mobileOpen = false,
   onMobileClose,
 }: DashboardSidebarProps) {
@@ -191,12 +193,12 @@ export default function DashboardSidebar({
               color: t.textMuted,
             }}
           >
-            {MOCK_REPOSITORIES.length}
+            {repositories.length}
           </span>
         </div>
 
         <ul className="space-y-0.5">
-          {MOCK_REPOSITORIES.map((repo) => {
+          {repositories.map((repo) => {
             const isSelected = selectedRepoId === repo.id;
             return (
               <li key={repo.id}>
